@@ -35,9 +35,10 @@ export default function UnoCard({ card, faceDown = false, playable = false, onCl
   const glowClass  = playable ? GLOW[card.color] ?? GLOW.wild : '';
   const label      = cardLabel(card);
 
+  // Responsive card sizes: mobile → tablet → desktop
   const sizeClass = small
-    ? 'w-9 h-14 text-[10px]'
-    : 'w-20 h-28 text-base sm:w-24 sm:h-36 sm:text-lg';
+    ? 'w-8 h-12 text-[9px] sm:w-9 sm:h-14 sm:text-[10px]'
+    : 'w-16 h-24 text-sm sm:w-20 sm:h-28 sm:text-base lg:w-24 lg:h-36 lg:text-lg';
 
   return (
     <motion.div
