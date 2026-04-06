@@ -3,7 +3,8 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/gameStore.js';
 import { getPlayable }  from '../utils/gameEngine.js';
-import { useGameHistory } from '../hooks/useGameHistory.js';
+import { useGameHistory }    from '../hooks/useGameHistory.js';
+import { useDealAnimation }  from '../hooks/useDealAnimation.js';
 
 import GameHUD      from '../components/hud/GameHUD.jsx';
 import TurnTimer    from '../components/hud/TurnTimer.jsx';
@@ -32,7 +33,8 @@ export default function GamePage() {
   const clearMessage    = useGameStore(s => s.clearMessage);
   const recordWin       = useGameStore(s => s.recordWin);
 
-  const { log } = useGameHistory(gameState);
+  const { log }     = useGameHistory(gameState);
+  const { dealing } = useDealAnimation(gameState);
 
   // Redirect if no game loaded
   useEffect(() => { if (!gameState) navigate('/'); }, []);
@@ -90,6 +92,7 @@ export default function GamePage() {
           playableIds={playableIds}
           onPlay={handlePlay}
           isMyTurn={isMyTurn}
+          dealing={dealing}
         />
       </div>
 
