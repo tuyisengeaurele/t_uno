@@ -1,9 +1,14 @@
 // ─── Game Store (Zustand) ──────────────────────────────────────────────────────
 import { create } from 'zustand';
-import { createInitialState, playCard, drawCard, chooseColor } from '../utils/gameEngine.js';
+import {
+  createInitialState,
+  playCard  as enginePlayCard,
+  drawCard  as engineDrawCard,
+  chooseColor as engineChooseColor,
+} from '../utils/gameEngine.js';
 import { executeAITurn } from '../utils/aiPlayer.js';
 
-const AI_DELAY_MS = 900; // feel natural
+const AI_DELAY_MS = 900;
 
 function makePlayerConfigs(humanName, aiCount) {
   const players = [{ id: 'human', name: humanName || 'You', isAI: false }];
@@ -16,38 +21,31 @@ function makePlayerConfigs(humanName, aiCount) {
 
 export const useGameStore = create((set, get) => ({
   // ── State ──────────────────────────────────────────────────────────────────
-  gameState:    null,   // UNO engine state
-  mode:         null,   // 'singleplayer' | 'multiplayer'
-  humanId:      'human',
-  aiCount:      1,
-  humanName:    'You',
-  isAnimating:  false,
-  colorPicker:  false,  // show color picker modal
-  pendingCard:  null,   // card waiting for color pick
-  message:      '',     // feedback message shown to user
-  scores:       {},     // { playerId: wins }
+  gameState:   null,
+  mode:        null,
+  humanId:     'human',
+  aiCount:     1,
+  humanName:   'You',
+  colorPicker: false,
+  pendingCard: null,
+  message:     '',
+  scores:      {},
 
-  // ── Single-player actions ──────────────────────────────────────────────────
+  // ── Single-player setup ───────────────────────────────────────────────────
 
   startSinglePlayer(humanName, aiCount) {
     const configs = makePlayerConfigs(humanName, aiCount);
     const state   = createInitialState(configs);
     set({
-      gameState:   state,
-      mode:        'singleplayer',
-      humanName:   humanName || 'You',
-      humanId:     'human',
-      aiCount,
-      colorPicker: false,
-      pendingCard: null,
-      message:     '',
+      gameState: state, mode: 'singleplayer',
+      humanName: humanName || 'You', humanId: 'human', aiCount,
+      colorPicker: false, pendingCard: null, message: '',
     });
   },
 
   resetGame() {
     const { humanName, aiCount } = get();
-    const configs = makePlayerConfigs(humanName, aiCount);
-    const state   = createInitialState(configs);
+    const state = createInitialState(makePlayerConfigs(humanName, aiCount));
     set({ gameState: state, colorPicker: false, pendingCard: null, message: '' });
   },
 
@@ -64,7 +62,7 @@ export const useGameStore = create((set, get) => ({
     }
 
     try {
-      const newState = playCard(gameState, humanId, cardId, null);
+      const newState = enginePlayCard(gameState, humanId, cardId, null);
       set({ gameState: newState, message: '' });
       if (newState.phase === 'playing') get()._runAITurns(newState);
     } catch (err) {
@@ -76,9 +74,9 @@ export const useGameStore = create((set, get) => ({
     const { gameState, humanId, pendingCard } = get();
     if (!pendingCard) return;
     try {
-      let newState = playCard(gameState, humanId, pendingCard.id, color);
+      let newState = enginePlayCard(gameState, humanId, pendingCard.id, color);
       if (newState.phase === 'choosing_color') {
-        newState = chooseColor(newState, humanId, color);
+        newState = engineChooseColor(newState, humanId, color);
       }
       set({ gameState: newState, colorPicker: false, pendingCard: null, message: '' });
       if (newState.phase === 'playing') get()._runAITurns(newState);
@@ -87,16 +85,14 @@ export const useGameStore = create((set, get) => ({
     }
   },
 
-  cancelColorPicker() {
-    set({ colorPicker: false, pendingCard: null });
-  },
+  cancelColorPicker() { set({ colorPicker: false, pendingCard: null }); },
 
   // ── Human draws ──────────────────────────────────────────────────────────
 
   drawCard() {
     const { gameState, humanId } = get();
     try {
-      const newState = drawCard(gameState, humanId);
+      const newState = engineDrawCard(gameState, humanId);
       set({ gameState: newState, message: '' });
       if (newState.phase === 'playing' && newState.currentIndex !== gameState.currentIndex) {
         get()._runAITurns(newState);
@@ -110,19 +106,10 @@ export const useGameStore = create((set, get) => ({
 
   _runAITurns(state) {
     const run = (s) => {
-      if (s.phase !== 'playing') {
-        set({ gameState: s });
-        return;
-      }
+      if (s.phase !== 'playing') { set({ gameState: s }); return; }
       const current = s.players[s.currentIndex];
-      if (!current.isAI) {
-        set({ gameState: s });
-        return;
-      }
-      setTimeout(() => {
-        const next = executeAITurn(s);
-        run(next);
-      }, AI_DELAY_MS);
+      if (!current.isAI) { set({ gameState: s }); return; }
+      setTimeout(() => run(executeAITurn(s)), AI_DELAY_MS);
     };
     run(state);
   },
@@ -130,9 +117,7 @@ export const useGameStore = create((set, get) => ({
   // ── Scoring ───────────────────────────────────────────────────────────────
 
   recordWin(playerId) {
-    set(state => ({
-      scores: { ...state.scores, [playerId]: (state.scores[playerId] ?? 0) + 1 },
-    }));
+    set(s => ({ scores: { ...s.scores, [playerId]: (s.scores[playerId] ?? 0) + 1 } }));
   },
 
   clearMessage() { set({ message: '' }); },
