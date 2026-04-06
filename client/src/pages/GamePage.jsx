@@ -5,6 +5,7 @@ import { useGameStore } from '../store/gameStore.js';
 import { getPlayable }  from '../utils/gameEngine.js';
 import { useGameHistory }    from '../hooks/useGameHistory.js';
 import { useDealAnimation }  from '../hooks/useDealAnimation.js';
+import { useLeaderboard }    from '../hooks/useLeaderboard.js';
 
 import GameHUD      from '../components/hud/GameHUD.jsx';
 import TurnTimer    from '../components/hud/TurnTimer.jsx';
@@ -35,6 +36,7 @@ export default function GamePage() {
 
   const { log }     = useGameHistory(gameState);
   const { dealing } = useDealAnimation(gameState);
+  const { addWin }  = useLeaderboard();
 
   // Redirect if no game loaded
   useEffect(() => { if (!gameState) navigate('/'); }, []);
@@ -43,6 +45,8 @@ export default function GamePage() {
   useEffect(() => {
     if (gameState?.phase === 'game_over' && gameState.winner) {
       recordWin(gameState.winner);
+      const winnerPlayer = gameState.players.find(p => p.id === gameState.winner);
+      if (winnerPlayer) addWin(winnerPlayer.name);
       gameState.winner === humanId ? Sounds.win() : Sounds.lose();
     }
   }, [gameState?.phase]);
