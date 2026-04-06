@@ -94,8 +94,15 @@ export const useGameStore = create((set, get) => ({
     try {
       const newState = engineDrawCard(gameState, humanId);
       set({ gameState: newState, message: '' });
-      if (newState.phase === 'playing' && newState.currentIndex !== gameState.currentIndex) {
+      // Turn moved to next player → kick off AI chain
+      const turnMoved = newState.currentIndex !== gameState.currentIndex;
+      if (newState.phase === 'playing' && turnMoved) {
         get()._runAITurns(newState);
+      }
+      // Drawn card is playable → keep turn on human, show a hint
+      if (newState.phase === 'playing' && !turnMoved) {
+        const drawnCard = newState.players.find(p => p.id === humanId)?.hand.at(-1);
+        if (drawnCard) set({ message: `Drew a ${drawnCard.value} — you may play it!` });
       }
     } catch (err) {
       set({ message: typeof err === 'string' ? err : 'Error' });
