@@ -33,7 +33,14 @@ export const useMultiplayerStore = create((set, get) => ({
 
     s.off();  // remove old listeners before reconnecting
 
-    s.on('connect',    () => set({ connected: true, myId: s.id, error: null }));
+    s.on('connect', () => {
+      set({ connected: true, myId: s.id, error: null });
+      // Auto-reconnect: if we were in a game, try to rejoin
+      const { roomCode, myName, phase } = get();
+      if (roomCode && (phase === 'playing' || phase === 'game_over')) {
+        s.emit('room:reconnect', { roomCode, name: myName });
+      }
+    });
     s.on('disconnect', () => set({ connected: false }));
     s.on('error',      ({ message }) => set({ error: message }));
 
@@ -42,6 +49,12 @@ export const useMultiplayerStore = create((set, get) => ({
     s.on('room:joined',   ({ roomCode, players }) => set({ roomCode, players, phase: 'lobby' }));
     s.on('room:updated',  ({ players }) => set({ players }));
     s.on('room:error',    ({ message }) => set({ error: message }));
+
+    // Reconnect events
+    s.on('room:reconnected',         ({ gameState }) => set({ gameState, phase: 'playing', myId: s.id }));
+    s.on('room:player_disconnected', ({ name, graceMs }) =>
+      set({ error: `${name} disconnected — ${graceMs / 1000}s to reconnect…` })
+    );
 
     // Game events
     s.on('game:start',   ({ gameState }) => set({ gameState, phase: 'playing', error: null }));
