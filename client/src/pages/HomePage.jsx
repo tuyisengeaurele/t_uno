@@ -98,6 +98,15 @@ export default function HomePage() {
             >
               🌐 Multiplayer
             </motion.button>
+
+            <motion.button
+              variants={ITEM}
+              whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
+              onClick={() => navigate('/leaderboard')}
+              className="w-full bg-gray-700/70 hover:bg-gray-700 text-gray-200 font-bold text-base py-3 rounded-2xl border border-gray-600/50 transition-colors"
+            >
+              🏆 Leaderboard
+            </motion.button>
           </>
         ) : (
           <motion.div
